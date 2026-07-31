@@ -1,0 +1,83 @@
+{
+  "name": "ai-comment-assistant",
+  "version": "1.2.0",
+  "description": "AI 自动评论助手",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "server": "node server.js",
+    "dist": "electron-builder --win --x64",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.aicomment.assistant",
+    "productName": "AI CommentHelper",
+    "directories": {
+      "output": "release"
+    },
+    "asar": false,
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "aiConfig.js",
+      "aiComment.js",
+      "logger.js",
+      "pauser.js",
+      "detect.js",
+      "detect_runner.js",
+      "pinglun_*.js",
+      "public/**/*",
+      "!pw-browsers/**/*",
+      "!release/**/*",
+      "!dist/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/patchright/**/*",
+      "node_modules/patchright-core/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "pw-browsers/chromium-1228",
+        "to": "chromium-1228",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI CommentHelper",
+      "installerLanguages": ["zh_CN"]
+    }
+  },
+  "keywords": ["ai", "comment", "automation"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "patchright": "^1.61.0",
+    "socket.io": "^4.6.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  }
+}

@@ -1,0 +1,44 @@
+# 依赖
+node_modules/
+
+# 构建产物（electron-builder 输出）
+release/
+release_new/
+dist/
+
+# 内置 Chromium（416MB，electron-builder 用 extraResources 打包，不入库）
+pw-browsers/
+
+# 浏览器用户数据（含登录会话/cookie，敏感，不入库）
+pw-data-*/
+edge-user-data*/
+
+# 运行日志
+logs/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+
+# 开发模式(bat)下生成的临时脚本（server 复制到根目录的 temp_*.js）
+temp_*.js
+
+# 用户配置（含账号名/可能的密钥，敏感，不入库）
+# 注意：aiConfig.js 是「种子模板」需入库，请保持其中 endpoint/apiKey/model 为空！
+detectAccounts.json
+aiConfig.local.js
+
+# 第三方参考源码（另一个项目，不混入本仓库）
+chrome评论插件第一版源码0730/
+
+# Claude Code 本地配置（机器相关，不入库）
+.claude/settings.local.json
+
+# IDE / 系统
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
