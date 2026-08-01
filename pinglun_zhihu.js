@@ -9,7 +9,7 @@ const { checkPause } = require('./pauser');
   // ====================== 配置区（自行修改） ======================
   // 知乎专栏链接，替换成你自己的链接
   const zhihuUrlList = [
-];
+  ];
 
   const perUrlCommentCount = 1; // 每个链接评论n次
   // patchright chromium 专用独立目录（全新未被知乎标记）；首次运行需手动登录一次
@@ -58,7 +58,7 @@ const { checkPause } = require('./pauser');
       await loginPage.close();
     }
 
-    // 循环遍历10个链接
+    // 循环遍历链接
     for (const targetUrl of zhihuUrlList)
     {
       console.log(`\n===== 开始处理文章：${targetUrl} =====`);
@@ -73,7 +73,8 @@ const { checkPause } = require('./pauser');
         await page.goto('https://www.zhihu.com/', { waitUntil: "load" });
         await randomSleep(3000, 6000);
         // 在首页模拟几次滚动，更像正常用户
-        try {
+        try
+        {
           await page.evaluate(() => {
             window.scrollBy(0, Math.random() * 400 + 200);
           });
@@ -162,8 +163,8 @@ const { checkPause } = require('./pauser');
 
           try
           {
-            // 定位评论输入框
-            const editor = page.getByRole('textbox', { placeholder: '理性发言，友善互动' });
+            // 定位评论输入框（发过评论后页面可能同时存在两个编辑器，取第一个）
+            const editor = page.getByRole('textbox', { placeholder: '理性发言，友善互动' }).first();
             await editor.waitFor({ timeout: 60000 });
             await editor.fill(randomText);
             await randomSleep(1000, 3000);
