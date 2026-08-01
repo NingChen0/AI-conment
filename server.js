@@ -646,7 +646,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   logger.info('=================================');
   logger.info('🤖 AI 评论助手服务已启动');

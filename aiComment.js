@@ -28,7 +28,7 @@ const SYSTEM_PROMPT = [
  * @param {number} [cfg.maxInputChars] 正文最大输入字符数，默认 3000（超出截断）
  * @returns {Promise<string>} 生成的评论文本
  */
-async function generateQuestionComment(articleText, cfg = {}) {
+async function generateQuestionComment (articleText, cfg = {}) {
   const {
     apiType = 'chat',
     endpoint,
@@ -39,7 +39,8 @@ async function generateQuestionComment(articleText, cfg = {}) {
     maxInputChars = 3000,
   } = cfg;
 
-  if (!endpoint || !apiKey || !model) {
+  if (!endpoint || !apiKey || !model)
+  {
     throw new Error('请先在配置中填写 endpoint / apiKey / model');
   }
 
@@ -51,11 +52,14 @@ async function generateQuestionComment(articleText, cfg = {}) {
 
   const payload = { endpoint, apiKey, model, maxTokens, temperature, userPrompt };
   let text;
-  if (apiType === 'messages') {
+  if (apiType === 'messages')
+  {
     text = await callMessages(payload);        // Anthropic /v1/messages
-  } else if (apiType === 'responses') {
+  } else if (apiType === 'responses')
+  {
     text = await callResponses(payload);       // OpenAI /v1/responses
-  } else {
+  } else
+  {
     text = await callChatCompletions(payload); // OpenAI /v1/chat/completions
   }
 
@@ -63,7 +67,7 @@ async function generateQuestionComment(articleText, cfg = {}) {
 }
 
 // ---- /v1/chat/completions 格式 ----
-async function callChatCompletions({ endpoint, apiKey, model, maxTokens, temperature, userPrompt }) {
+async function callChatCompletions ({ endpoint, apiKey, model, maxTokens, temperature, userPrompt }) {
   const body = {
     model,
     messages: [
@@ -72,25 +76,46 @@ async function callChatCompletions({ endpoint, apiKey, model, maxTokens, tempera
     ],
     max_tokens: maxTokens,
     temperature,
+    stream: false, // 强制关闭流式，DeepSeek非流式标准返回
   };
 
   const data = await postChatRequest(endpoint, apiKey, body);
-  const msg = data?.choices?.[0]?.message;
-  let text = msg?.content;
 
-  // 推理模型会把 token 预算大部分花在 thinking 上，导致 content 为空
-  //（finish_reason 通常为 length）。此时用更大的 token 上限自动重试一次，
-  // 让模型思考完并真正输出评论正文，避免每条评论都失败。
-  if (!text && (msg?.reasoning_content || data?.choices?.[0]?.finish_reason === 'length')) {
-    text = await retryChatWithBiggerBudget(endpoint, apiKey, model, maxTokens, temperature, userPrompt);
+  // 1. 安全层级解析，避免choices为null/空数组报错
+  const firstChoice = data?.choices?.[0] ?? {};
+  const message = firstChoice.message ?? {};
+  const finishReason = firstChoice.finish_reason;
+
+  // 清洗正文：去除首尾空白，区分 null/undefined/空串/纯空白
+  let outputText = (message.content ?? '').trim();
+
+  // 2. DeepSeek专属重试逻辑：仅正文空白 + 推理存在 / token截断 才扩容重试
+  if (outputText === '' && (message.reasoning_content || finishReason === 'length'))
+  {
+    console.log('[DeepSeek触发扩容重试] 原生content为空，推理内容存在或token截断');
+    outputText = await retryChatWithBiggerBudget(endpoint, apiKey, model, maxTokens, temperature, userPrompt);
+    outputText = (outputText ?? '').trim();
   }
 
-  if (!text) throw new Error('接口未返回评论内容：' + JSON.stringify(data).slice(0, 500));
-  return text;
+  // 3. 极端兜底：重试后依然无正文，尝试用推理内容兜底（业务按需开启/关闭）
+  if (outputText === '' && message.reasoning_content)
+  {
+    console.log('[DeepSeek兜底使用推理内容]');
+    outputText = message.reasoning_content.trim();
+  }
+
+  // 4. 最终校验抛出异常
+  if (!outputText)
+  {
+    const respSnapshot = JSON.stringify(data).slice(0, 800);
+    throw new Error(`DeepSeek接口无有效输出，原始响应快照：${respSnapshot}`);
+  }
+
+  return outputText;
 }
 
 // 单次 chat/completions 请求（POST + 解析 JSON）
-async function postChatRequest(endpoint, apiKey, body) {
+async function postChatRequest (endpoint, apiKey, body) {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -103,7 +128,7 @@ async function postChatRequest(endpoint, apiKey, body) {
 }
 
 // 推理模型 thinking 吃光 token 预算时，放大上限重试一次（不带 thinking 参数，一次性兜底，避免反复失败）
-async function retryChatWithBiggerBudget(endpoint, apiKey, model, maxTokens, temperature, userPrompt) {
+async function retryChatWithBiggerBudget (endpoint, apiKey, model, maxTokens, temperature, userPrompt) {
   const retryMax = Math.max(4096, maxTokens * 4);
   const body = {
     model,
@@ -119,7 +144,7 @@ async function retryChatWithBiggerBudget(endpoint, apiKey, model, maxTokens, tem
 }
 
 // ---- /v1/responses 格式 ----
-async function callResponses({ endpoint, apiKey, model, maxTokens, temperature, userPrompt }) {
+async function callResponses ({ endpoint, apiKey, model, maxTokens, temperature, userPrompt }) {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -141,17 +166,22 @@ async function callResponses({ endpoint, apiKey, model, maxTokens, temperature, 
 }
 
 // 解析 responses 接口的多种返回结构
-function extractResponsesText(data) {
+function extractResponsesText (data) {
   // 1) SDK 便捷字段
-  if (typeof data?.output_text === 'string' && data.output_text.trim()) {
+  if (typeof data?.output_text === 'string' && data.output_text.trim())
+  {
     return data.output_text;
   }
   // 2) 标准结构 output[].content[].text
-  if (Array.isArray(data?.output)) {
+  if (Array.isArray(data?.output))
+  {
     const parts = [];
-    for (const item of data.output) {
-      if (Array.isArray(item?.content)) {
-        for (const c of item.content) {
+    for (const item of data.output)
+    {
+      if (Array.isArray(item?.content))
+      {
+        for (const c of item.content)
+        {
           if (typeof c?.text === 'string') parts.push(c.text);
           else if (typeof c?.text?.value === 'string') parts.push(c.text.value);
         }
@@ -165,7 +195,7 @@ function extractResponsesText(data) {
 }
 
 // ---- Anthropic /v1/messages 格式（Claude 模型 / Claude Code 代理）----
-async function callMessages({ endpoint, apiKey, model, maxTokens, userPrompt }) {
+async function callMessages ({ endpoint, apiKey, model, maxTokens, userPrompt }) {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -190,19 +220,22 @@ async function callMessages({ endpoint, apiKey, model, maxTokens, userPrompt }) 
 }
 
 // 解析 Anthropic messages 返回：content 是块数组，取 type==='text' 的 text 拼接
-function extractMessagesText(data) {
-  if (Array.isArray(data?.content)) {
+function extractMessagesText (data) {
+  if (Array.isArray(data?.content))
+  {
     const textParts = data.content
       .filter(b => b && b.type === 'text' && typeof b.text === 'string')
       .map(b => b.text);
 
-    if (textParts.length > 0) {
+    if (textParts.length > 0)
+    {
       return textParts.join('');
     }
 
     // 如果只有 thinking 块没有 text 块，说明模型配置有问题（某些模型需要禁用 thinking）
     const hasThinking = data.content.some(b => b && b.type === 'thinking');
-    if (hasThinking) {
+    if (hasThinking)
+    {
       throw new Error('模型返回了 thinking 块但没有 text 块，请在 API 配置中添加参数禁用 thinking 或换用其他模型');
     }
   }
@@ -210,8 +243,9 @@ function extractMessagesText(data) {
   return '';
 }
 
-async function readJsonOrThrow(res) {
-  if (!res.ok) {
+async function readJsonOrThrow (res) {
+  if (!res.ok)
+  {
     const errText = await res.text().catch(() => '');
     throw new Error(`接口返回 ${res.status} ${res.statusText}：${errText.slice(0, 500)}`);
   }
@@ -219,7 +253,7 @@ async function readJsonOrThrow(res) {
 }
 
 // 清理模型偶尔多加的引号/前后空白
-function cleanComment(text) {
+function cleanComment (text) {
   return String(text).trim().replace(/^["'「『]+|["'」』]+$/g, '').trim();
 }
 
@@ -229,7 +263,7 @@ function cleanComment(text) {
  * @param {import('playwright').Page} page
  * @returns {Promise<string>}
  */
-async function extractArticleText(page) {
+async function extractArticleText (page) {
   const selectors = [
     '.Post-RichText',   // 知乎专栏
     'article',          // 通用文章标签 / 头条
@@ -237,9 +271,11 @@ async function extractArticleText(page) {
     '.RichText',
     'main',
   ];
-  for (const sel of selectors) {
+  for (const sel of selectors)
+  {
     const el = page.locator(sel).first();
-    if (await el.count().catch(() => 0)) {
+    if (await el.count().catch(() => 0))
+    {
       const text = (await el.innerText().catch(() => '')).trim();
       if (text.length > 50) return text;
     }

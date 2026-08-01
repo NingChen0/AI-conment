@@ -11,6 +11,6 @@ echo 正在启动服务器...
 echo 请稍候，浏览器将自动打开...
 echo.
 
-start http://localhost:3000
+start http://localhost:3001
 
 node server.js

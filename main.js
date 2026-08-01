@@ -43,7 +43,7 @@ function startServer() {
       ELECTRON_RUN_AS_NODE: '1',
       APP_USER_DATA: app.getPath('userData'),
       PLAYWRIGHT_BROWSERS_PATH: process.env.PATCHRIGHT_BROWSERS_PATH,
-      PORT: '3000'
+      PORT: '3001'
     },
     cwd: __dirname,
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
@@ -97,7 +97,7 @@ function createWindow() {
   ipcMain.on('win-control', (e, cmd) => winControls(cmd));
 
   Menu.setApplicationMenu(null); // 去掉默认菜单栏
-  mainWindow.loadURL('http://localhost:3000');
+  mainWindow.loadURL('http://localhost:3001');
 
   // 文章链接（target=_blank）等外部链接 → 用系统默认浏览器打开（在那儿手动登录操作），
   // 而不是在 app 内部开新窗口。
@@ -111,7 +111,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   startServer();
-  waitForServer(3000, (ok) => {
+  waitForServer(3001, (ok) => {
     if (ok) {
       createWindow();
     } else {
