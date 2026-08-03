@@ -164,7 +164,9 @@ const templates = {
     <div class="config-card">
       <div class="config-card-title">粘贴文章链接</div>
       <div class="hint-text">粘贴要检测的文章链接（每行一个，或随意粘贴），自动识别 知乎 / 头条 / CSDN / 百度 并分类。检测会回查「我的评论数 + 点赞 + 收藏」。搜狐暂不支持检测。</div>
-      <textarea id="detect-textarea" placeholder="每行一个文章链接，例如：&#10;https://zhuanlan.zhihu.com/p/xxx&#10;https://blog.csdn.net/xxx/article/details/xxx" oninput="updateDetectClassify()"></textarea>
+      <div class="form-group">
+        <textarea id="detect-textarea" placeholder="每行一个文章链接，例如：&#10;https://zhuanlan.zhihu.com/p/xxx&#10;https://blog.csdn.net/xxx/article/details/xxx" oninput="updateDetectClassify()"></textarea>
+      </div>
       <div id="detect-classify" class="classify-tags"></div>
     </div>
 
